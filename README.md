@@ -42,7 +42,22 @@ The research question explores the potential progress countries were making in d
 - Findings are summarized, and the strengths and weaknesses of the study are highlighted.
 - Suggestions for future investigations and conclusions are provided.
 
+## Project Structure
+
+```plaintext
+.
+├── GlobalMortalityComparison.Rmd
+├── data
+│   └── Death Rate.csv
+└── images
+    ├── Plot1.png
+    ├── Plot2.png
+    ├── Plot3.png
+    └── Plot4.png
+
+3 directories, 6 files
+```
+
 ## References
 - The analysis relies on data from The World Bank. Reference to the data source is included.
 
-Feel free to customize this README based on additional information or specific details related to your project.
