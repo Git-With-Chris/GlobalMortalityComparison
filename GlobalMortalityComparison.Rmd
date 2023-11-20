@@ -1,0 +1,224 @@
+---
+title: "Global Mortality Comparison COVID-19"
+author: "Chris John"
+date: "Last updated: `r format(Sys.time(), '%d %B, %Y')`"
+output:
+  slidy_presentation:
+    font_adjustment: 0
+    highlight: haddock
+    mathjax: "default"
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+# Use this chunk to quietly load your pacakges
+
+knitr::opts_chunk$set(
+	fig.align = "center",
+	message = FALSE,
+	warning = FALSE
+)
+# Packages loaded in this chunk will not appear in the presentation. 
+
+library(tidyverse)
+library(car)
+library(knitr)
+
+```
+
+
+# RPubs link information
+
+- Rpubs link comes here: https://rpubs.com/ChrisJohn/1117120
+
+# Introduction
+
+- COVID-19 originated around December of 2019 after which there have been numerous causalities due to this pandemic worldwide. The data sourced from the World Bank holds the records of the death rate per 1000 people in the years 2013 and 2018 by using nationally representative samples of the countries population.
+
+- The research question directing this investigation is "Was there a statistically significant shift in the death rate across the examined nations between 2013 and 2018".
+
+- The reason for choosing the years 2018 was this was the year preceding COVID-19 and counting back 5 years we have 2013 which is a reasonable gap to analyze if the death rate was indeed dropping before the pandemic.
+
+# Problem Statement
+
+- This topic was chosen for this investigation to analyse if the countries of the world were on track to developing better hospitable conditions for citizens before COVID-19.
+
+- Analyzing this data not only allows us to reflect on the potential progress that we were making but also puts in perspective the impact of the pandemic.
+
+- The research will mainly be using statistics to answer this question by using the following steps:
+  
+  - Generate descriptive statistics pertaining to the data(Mean, Standard Deviation etc)
+  - Comparison of the Data using Box Plots.
+  - Evaluate if the potential difference is significantly greater or lower using appropriate statistical test.
+
+# Data
+
+- The data used in this investigation was acquired from The World Bank (Open Source Website)
+- Data source URL: https://data.worldbank.org/indicator/SP.DYN.CDRT.IN?name_desc=false
+- The data comprises of the death rate across 266 countries from the years 1960 to 2020. The Data has been collected via the following resources: 
+  - (1) United Nations Population Division. World Population Prospects: 2022 Revision
+  - (2) Census reports and other statistical publications from national statistical offices
+  - (3) Eurostat: Demographic Statistics
+  - (4) United Nations Statistical Division. Population and Vital Statistics Report ( various years )
+  - (5) U.S. Census Bureau: International Database 
+  - (6) Secretariat of the Pacific Community: Statistics and Demography Program
+- The data is predominantly a aggregation of census data across countries which is then used to calculate the death rate.
+
+```{r}
+
+```
+
+# Data Cont.
+
+- Reading data into the R environment
+```{r}
+death_rate_raw <- read_csv("data/Death Rate.csv")
+```
+- Filtering data required for this Investigation
+```{r}
+death_rate_clean <- death_rate_raw %>% select(`Country Name`, `2013`, `2018`)
+head(death_rate_clean)
+```
+
+# Data Cont.
+
+- Pivoting the structure of the Data
+```{r}
+death_rate_clean <- death_rate_clean %>% pivot_longer(c("2013", "2018"), 
+                                                      names_to = "Year",
+                                                      values_to = "Death Rate")
+```
+
+- Converting required Year attribute to Factor
+```{r}
+death_rate_clean$Year <- death_rate_clean$Year %>% as.factor()
+str(death_rate_clean)
+```
+# Data Cont.
+
+- Key Variables:
+    - Country Name: List of all countries across the world.
+    - Year: Factor variable containing the year of the recorded death rate.
+    - Death Rate: Continuous variable recording the death rate.
+
+# Descriptive Statistics and Visualisation
+
+- Check for special Values
+```{r}
+sum(sapply(death_rate_clean, is.infinite))
+sum(sapply(death_rate_clean, is.nan))
+```
+
+- Check for Missing values
+```{r}
+sum(is.na(death_rate_clean))
+colSums(is.na(death_rate_clean))
+```
+
+# Decsriptive Statistics Cont.
+
+- Omitting Missing Values
+```{r}
+death_rate_clean <- death_rate_clean[complete.cases(death_rate_clean), ]
+```
+
+- As we can see there no Special values in our data set. However, we do have 8 missing values. 
+- Since the number of missing values in this data set is less than 3 percent they have been omitted for both years as having the data for just one year would not be useful when our goal is to compare the difference between the two years.
+
+# Decsriptive Statistics Cont.
+
+- You can use the `knitr:kable` function to print nice HTML tables. Here is an example R code:
+
+```{r}
+table1 <- death_rate_clean %>% group_by(Year) %>% summarise(Min = min(`Death Rate`,na.rm = TRUE),
+                                         Q1 = quantile(`Death Rate`,probs = .25,na.rm = TRUE),
+                                         Median = median(`Death Rate`, na.rm = TRUE),
+                                         Q3 = quantile(`Death Rate`,probs = .75,na.rm = TRUE),
+                                         Max = max(`Death Rate`,na.rm = TRUE),
+                                         Mean = mean(`Death Rate`, na.rm = TRUE),
+                                         SD = sd(`Death Rate`, na.rm = TRUE),
+                                         n = n(),
+                                         Missing = sum(is.na(`Death Rate`)))
+knitr::kable(table1)
+```
+
+# Decsriptive Statistics Cont.
+
+```{r}
+death_rate_clean %>% boxplot(`Death Rate` ~ Year, 
+                         data = .,
+                         ylab = "Death Rate",
+                         xlab= "Year",
+                         col = "blue",
+                         main = "Death Rate by Year")
+```
+
+
+# Hypothesis Testing
+
+- Steps of Hypothesis testing in this investigation:
+  - Formulate a Null (H0) and Alternative (H1) hypotheses.
+  - Validate assumptions like Independence, Normality and Homogeneity of Variances of death rate each year.
+  - Choose Statistical test depending on the distribution and assumptions.
+  - Perform Hypothesis test
+  - Extract information/insights from results
+
+# Hypthesis Testing Cont.
+
+$$`H_0: \text{No significant difference in the Death Rate across countries between 2013 and 2019}`$$
+
+
+$$`H_1: \text{Significant difference in the Death Rate across countries between 2013 and 2019}`$$
+
+- In this case it is appropriate to assume independence between the death rate for the years 2013 and 2018 since the death rate measured in this data set refers to a single individual and has been recorded independently for each year.
+
+# Hypthesis Testing Cont.
+- Testing for Normality in the death rate for the year 2013
+
+```{r}
+death_rate_2013 <- death_rate_clean %>% filter (Year == 2013)
+death_rate_2013$`Death Rate` %>% qqPlot(dist="norm", main = "QQ Plot for 2013 Death Rate")
+```
+
+# Hypthesis Testing Cont.
+- Testing for Normality in the death rate for the year 2018
+
+```{r}
+death_rate_2018 <- death_rate_clean %>% filter (Year == 2018)
+death_rate_2018$`Death Rate` %>% qqPlot(dist="norm", main = "QQ Plot for 2018 Death Rate")
+```
+
+# Hypthesis Testing Cont.
+- The previous QQ plots show that the tail in the 2018 data seems to be heavier. However since our data set is large (n > 30) it is safe to assume normality.
+- Conducting Levene's Test to check for homogeneity of variance between the two years.
+```{r}
+leveneTest(`Death Rate` ~ `Year`, data = death_rate_clean)
+```
+- We lack sufficient data to reject the null hypothesis because the p-value (0.3953) exceeds the usual significance level of 0.05. The variances of the death rate statistics for the years 2013 and 2018 do not, according to the Levene's test, show that they are significantly different from one another.
+- Thus it is safely assumed that there is equal variance.
+
+# Hypthesis Testing Cont.
+```{r}
+t.test(`Death Rate` ~ `Year`,
+       data = death_rate_clean,
+       var.equal = T,
+       alternative = "two.sided"
+)
+```
+- According to the findings, the t-test does not offer enough proof to disprove the null hypothesis. The death rate means between the 2013 and 2018 groups do not significantly differ, according to the p-value of 0.3717. 
+- This implies that the alternative hypothesis is not supported by enough evidence.
+
+
+
+
+# Discussion
+
+- Findings of this investigation: From this investigation we can conclude that there was no significant shift in the death rate across countries between the years 2013 and 2018. The test statistic's p-value, which was higher than the significance level, led us to this conclusion.
+- Strengths: The study made use of a sizable data set obtained from the World Bank, which included complete mortality rate statistics for several nations. Descriptive statistics, normality tests, and other statistical analytic techniques were used to rigorously address the study topic.
+- Weaknesses: The research was simply concerned with the death rate and did not take into account any other potential influences or confounding variables that may have affected the findings. Furthermore, even while assuming normality and equal variances in big data sets might be logical, it is still an assumption that could have an impact on the accuracy of the findings.
+- Directions for future investigations: Investigate the link between the mortality rate and other variables, such as healthcare costs, socioeconomic characteristics, or public health initiatives, in order to determine whether they may have an impact on the trends in the recorded death rates. Extend the study through 2018 to account for the COVID-19 pandemic's effects and look at how it affected the death rate in years after.
+- Conclusion: According to the data, there was no statistically significant variation in the death rate between 2013 and 2018 across the various nations. However, it's crucial to recognize the investigation's shortcomings and take into account additional potential factors that might affect the death rate. Future research should expand the analysis to include more factors and capture the COVID-19 pandemic's effects.
+
+# References
+
+- Death rate, crude (per 1,000 people) | Data. (n.d.). Data.worldbank.org. https://data.worldbank.org/indicator/SP.DYN.CDRT.IN?name_desc=false
